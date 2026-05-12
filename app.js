@@ -1,5 +1,7 @@
 let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 let spendingChart = null;
+let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
+
 
 function addTransaction() {
   const description = document.getElementById('description').value;
@@ -127,6 +129,178 @@ function updateChart() {
     }
   });
 }
+
+function saveAccounts() {
+  localStorage.setItem('accounts', JSON.stringify(accounts));
+}
+
+function addAccount() {
+  const name = document.getElementById('accountName').value.trim();
+  const type = document.getElementById('accountType').value;
+  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
+
+  if (!name) {
+    alert('Please enter an account name!');
+    return;
+  }
+
+  const account = {
+    id: Date.now(),
+    name,
+    type,
+    balance,
+    transactions: []
+  };
+
+  accounts.push(account);
+  saveAccounts();
+  renderAccounts();
+  clearAccountForm();
+}
+
+function clearAccountForm() {
+  document.getElementById('accountName').value = '';
+  document.getElementById('accountBalance').value = '';
+}
+
+function deleteAccount(id) {
+  if (confirm('Are you sure you want to delete this account?')) {
+    accounts = accounts.filter(a => a.id !== id);
+    saveAccounts();
+    renderAccounts();
+  }
+}
+
+function renderAccounts() {
+  const grid = document.getElementById('accountsGrid');
+  if (accounts.length === 0) {
+    grid.innerHTML = `
+      <div class="no-accounts">
+        <p>No accounts yet. Add your first account above!</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = accounts.map(account => `
+    <div class="account-card" onclick="openAccount(${account.id})">
+      <div class="account-card-header">
+        <span class="account-icon">${getAccountIcon(account.type)}</span>
+        <button class="delete-btn" onclick="event.stopPropagation(); deleteAccount(${account.id})">✕</button>
+      </div>
+      <div class="account-name">${account.name}</div>
+      <div class="account-type">${account.type}</div>
+      <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+        $${Math.abs(account.balance).toFixed(2)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function getAccountIcon(type) {
+  const icons = {
+    'Credit Card': '💳',
+    'Debit': '🏦',
+    'Savings': '🏧',
+    'Investment': '📈',
+    'Cash': '💵'
+  };
+  return icons[type] || '💰';
+}
+
+function openAccount(id) {
+  const account = accounts.find(a => a.id === id);
+  if (!account) return;
+
+  document.getElementById('accountDetailName').textContent = account.name;
+  document.getElementById('accountDetailType').textContent = account.type;
+  document.getElementById('accountDetailBalance').textContent = 
+    `$${account.balance.toFixed(2)}`;
+
+  renderAccountTransactions(account);
+  document.getElementById('accountsView').style.display = 'none';
+  document.getElementById('accountDetailView').style.display = 'block';
+  document.getElementById('currentAccountId').value = id;
+}
+
+function closeAccount() {
+  document.getElementById('accountsView').style.display = 'block';
+  document.getElementById('accountDetailView').style.display = 'none';
+}
+
+function addAccountTransaction() {
+  const id = parseInt(document.getElementById('currentAccountId').value);
+  const account = accounts.find(a => a.id === id);
+  if (!account) return;
+
+  const description = document.getElementById('accTxDescription').value.trim();
+  const amount = parseFloat(document.getElementById('accTxAmount').value);
+  const type = document.getElementById('accTxType').value;
+  const category = document.getElementById('accTxCategory').value;
+  const recurring = document.getElementById('accTxRecurring').checked;
+  const date = new Date().toLocaleDateString();
+
+  if (!description || isNaN(amount)) {
+    alert('Please fill in all fields!');
+    return;
+  }
+
+  const transaction = { id: Date.now(), description, amount, type, category, recurring, date };
+  account.transactions.push(transaction);
+
+  if (type === 'expense') {
+    account.balance -= amount;
+  } else {
+    account.balance += amount;
+  }
+
+  saveAccounts();
+  renderAccountTransactions(account);
+  document.getElementById('accountDetailBalance').textContent =
+    `$${account.balance.toFixed(2)}`;
+
+  document.getElementById('accTxDescription').value = '';
+  document.getElementById('accTxAmount').value = '';
+}
+
+function deleteAccountTransaction(accountId, txId) {
+  const account = accounts.find(a => a.id === accountId);
+  if (!account) return;
+
+  const tx = account.transactions.find(t => t.id === txId);
+  if (!tx) return;
+
+  if (tx.type === 'expense') {
+    account.balance += tx.amount;
+  } else {
+    account.balance -= tx.amount;
+  }
+
+  account.transactions = account.transactions.filter(t => t.id !== txId);
+  saveAccounts();
+  renderAccountTransactions(account);
+  document.getElementById('accountDetailBalance').textContent =
+    `$${account.balance.toFixed(2)}`;
+}
+
+function renderAccountTransactions(account) {
+  const list = document.getElementById('accountTransactionList');
+  if (account.transactions.length === 0) {
+    list.innerHTML = '<p class="no-tx">No transactions yet.</p>';
+    return;
+  }
+
+  list.innerHTML = account.transactions.map(tx => `
+    <li class="${tx.type}">
+      <span>${tx.description} ${tx.recurring ? '🔄' : ''}</span>
+      <span class="date">${tx.date}</span>
+      <span class="category-tag">${tx.category}</span>
+      <span>${tx.type === 'income' ? '+' : '-'}$${tx.amount.toFixed(2)}</span>
+      <button class="delete-btn" 
+        onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
+    </li>
+  `).join('');
+}
+
 
 // Load everything when page opens
 updateDashboard();

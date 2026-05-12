@@ -1,4 +1,4 @@
-# 💰 Personal Finance Tracker
+# Personal Finance Tracker
 
 A personal finance dashboard that helps you track income, expenses, 
 and balance in real time — powered by FINN, your AI financial advisor. 
@@ -6,7 +6,7 @@ Built with HTML, CSS, and JavaScript.
 
 ---
 
-## 🚀 Features
+## Features
 
 - Real time dashboard — income, expenses, and balance cards
 - Add transactions with categories and date stamps
@@ -17,7 +17,7 @@ Built with HTML, CSS, and JavaScript.
 
 ---
 
-## 🛠️ Built With
+## Built With
 
 - HTML, CSS, JavaScript
 - Chart.js — spending visualizations
@@ -60,6 +60,6 @@ Built with HTML, CSS, and JavaScript.
 
 ## Author
 
-**ggara111**  
+**ggara1**  
 CS Student 
 [GitHub](https://github.com/ggara111)

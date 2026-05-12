@@ -43,4 +43,7 @@
 -FINN as popup. Intial trouble with code, but now working
 -Working sidebar navigation.
 
+### Next session:
+- Accounts page
+
 
