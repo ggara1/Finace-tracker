@@ -260,6 +260,7 @@ function addAccountTransaction() {
 
   document.getElementById('accTxDescription').value = '';
   document.getElementById('accTxAmount').value = '';
+  renderAccounts();
 }
 
 function deleteAccountTransaction(accountId, txId) {
@@ -280,6 +281,7 @@ function deleteAccountTransaction(accountId, txId) {
   renderAccountTransactions(account);
   document.getElementById('accountDetailBalance').textContent =
     `$${account.balance.toFixed(2)}`;
+  renderAccounts();
 }
 
 function renderAccountTransactions(account) {
