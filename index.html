@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+
 <!-- SIDEBAR -->
 <div class="sidebar">
   <div class="sidebar-logo">
@@ -60,32 +61,9 @@
         <p>$0.00</p>
       </div>
     </div>
-    <div class="form-section">
-      <p class="section-title">Add Transaction</p>
-      <div class="form">
-        <input type="text" id="description" placeholder="Description (e.g. Groceries)" />
-        <input type="number" id="amount" placeholder="Amount (e.g. 50)" />
-        <select id="type">
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
-        <select id="category">
-          <option value="Food">🍔 Food</option>
-          <option value="Transport">🚗 Transport</option>
-          <option value="Housing">🏠 Housing</option>
-          <option value="Entertainment">🎮 Entertainment</option>
-          <option value="Health">💪 Health</option>
-          <option value="Shopping">🛍️ Shopping</option>
-          <option value="Subscriptions">📱 Subscriptions</option>
-          <option value="Income">💰 Income</option>
-          <option value="Other">📦 Other</option>
-        </select>
-        <button onclick="addTransaction()">Add</button>
-      </div>
-    </div>
     <div class="middle-row">
       <div class="transaction-list">
-        <p class="section-title">Transactions</p>
+        <p class="section-title">Recent Transactions</p>
         <ul id="transactions"></ul>
       </div>
       <div class="chart-section">
@@ -98,82 +76,71 @@
   </div>
 
   <!-- ACCOUNTS PAGE -->
-<div id="page-accounts" class="page">
-  <div class="page-header">
-    <h2>Accounts</h2>
-    <p>Manage your cards and accounts</p>
-  </div>
-
-  <!-- ACCOUNTS MAIN VIEW -->
-  <div id="accountsView">
-    <!-- ADD ACCOUNT FORM -->
-    <div class="form-section">
-      <p class="section-title">Add Account</p>
-      <div class="form">
-        <input type="text" id="accountName" placeholder="Account name (e.g. Chase Sapphire)" />
-        <select id="accountType">
-          <option value="Credit Card">💳 Credit Card</option>
-          <option value="Debit">🏦 Debit</option>
-          <option value="Savings">🏧 Savings</option>
-          <option value="Investment">📈 Investment</option>
-          <option value="Cash">💵 Cash</option>
-        </select>
-        <input type="number" id="accountBalance" placeholder="Starting balance (e.g. 1000)" />
-        <button onclick="addAccount()">Add Account</button>
+  <div id="page-accounts" class="page">
+    <div class="page-header">
+      <h2>Accounts</h2>
+      <p>Manage your cards and accounts</p>
+    </div>
+    <div id="accountsView">
+      <div class="form-section">
+        <p class="section-title">Add Account</p>
+        <div class="form">
+          <input type="text" id="accountName" placeholder="Account name (e.g. Chase Sapphire)" />
+          <select id="accountType">
+            <option value="Credit Card">💳 Credit Card</option>
+            <option value="Debit">🏦 Debit</option>
+            <option value="Savings">🏧 Savings</option>
+            <option value="Investment">📈 Investment</option>
+            <option value="Cash">💵 Cash</option>
+          </select>
+          <input type="number" id="accountBalance" placeholder="Credit limit or starting balance" />
+          <button onclick="addAccount()">Add Account</button>
+        </div>
+      </div>
+      <div id="accountsGrid" class="accounts-grid"></div>
+    </div>
+    <div id="accountDetailView" style="display:none;">
+      <input type="hidden" id="currentAccountId" />
+      <div class="account-detail-header">
+        <button class="back-btn" onclick="closeAccount()">← Back</button>
+        <div>
+          <h3 id="accountDetailName"></h3>
+          <p id="accountDetailType"></p>
+        </div>
+        <div class="account-detail-balance" id="accountDetailBalance"></div>
+      </div>
+      <div class="form-section">
+        <p class="section-title">Add Transaction</p>
+        <div class="form">
+          <input type="text" id="accTxDescription" placeholder="Description" />
+          <input type="number" id="accTxAmount" placeholder="Amount" />
+          <select id="accTxType">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+          <select id="accTxCategory">
+            <option value="Food">🍔 Food</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Housing">🏠 Housing</option>
+            <option value="Entertainment">🎮 Entertainment</option>
+            <option value="Health">💪 Health</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Subscriptions">📱 Subscriptions</option>
+            <option value="Income">💰 Income</option>
+            <option value="Other">📦 Other</option>
+          </select>
+          <label class="recurring-label">
+            <input type="checkbox" id="accTxRecurring" /> Recurring
+          </label>
+          <button onclick="addAccountTransaction()">Add</button>
+        </div>
+      </div>
+      <div class="transaction-list">
+        <p class="section-title">Transactions</p>
+        <ul id="accountTransactionList"></ul>
       </div>
     </div>
-
-    <!-- ACCOUNTS GRID -->
-    <div id="accountsGrid" class="accounts-grid"></div>
   </div>
-
-  <!-- ACCOUNT DETAIL VIEW -->
-  <div id="accountDetailView" style="display:none;">
-    <input type="hidden" id="currentAccountId" />
-    <div class="account-detail-header">
-      <button class="back-btn" onclick="closeAccount()">← Back</button>
-      <div>
-        <h3 id="accountDetailName"></h3>
-        <p id="accountDetailType"></p>
-      </div>
-      <div class="account-detail-balance" id="accountDetailBalance"></div>
-    </div>
-
-    <!-- ADD TRANSACTION TO ACCOUNT -->
-    <div class="form-section">
-      <p class="section-title">Add Transaction</p>
-      <div class="form">
-        <input type="text" id="accTxDescription" placeholder="Description" />
-        <input type="number" id="accTxAmount" placeholder="Amount" />
-        <select id="accTxType">
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-        </select>
-        <select id="accTxCategory">
-          <option value="Food">🍔 Food</option>
-          <option value="Transport">🚗 Transport</option>
-          <option value="Housing">🏠 Housing</option>
-          <option value="Entertainment">🎮 Entertainment</option>
-          <option value="Health">💪 Health</option>
-          <option value="Shopping">🛍️ Shopping</option>
-          <option value="Subscriptions">📱 Subscriptions</option>
-          <option value="Income">💰 Income</option>
-          <option value="Other">📦 Other</option>
-        </select>
-        <label class="recurring-label">
-          <input type="checkbox" id="accTxRecurring" /> Recurring
-        </label>
-        <button onclick="addAccountTransaction()">Add</button>
-      </div>
-    </div>
-
-    <!-- TRANSACTION LIST -->
-    <div class="transaction-list">
-      <p class="section-title">Transactions</p>
-      <ul id="accountTransactionList"></ul>
-    </div>
-  </div>
-</div>
 
   <!-- TRANSACTIONS PAGE -->
   <div id="page-transactions" class="page">
@@ -181,10 +148,9 @@
       <h2>Transactions</h2>
       <p>All your spending in one place</p>
     </div>
-    <div class="coming-soon">
-      <span>📋</span>
-      <h3>Transactions Coming Soon</h3>
-      <p>A unified view of all transactions across every account.</p>
+    <div class="transaction-list">
+      <p class="section-title">All Transactions</p>
+      <ul id="allTransactionsList"></ul>
     </div>
   </div>
 
@@ -264,3 +230,5 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
+  </body>
+</html>

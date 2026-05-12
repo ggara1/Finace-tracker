@@ -1,42 +1,14 @@
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 let spendingChart = null;
 let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
 
-
-function addTransaction() {
-  const description = document.getElementById('description').value;
-  const amount = parseFloat(document.getElementById('amount').value);
-  const type = document.getElementById('type').value;
-  const date = new Date().toLocaleDateString();
-
-  if (!description || isNaN(amount)) {
-    alert('Please fill in all fields!');
-    return;
-  }
-
-  const category = document.getElementById('category').value;
-  const transaction = { description, amount, type, category, date };
-  transactions.push(transaction);
-  saveTransactions();
-  updateDashboard();
-  clearForm();
-}
-
-function saveTransactions() {
-  localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-function deleteTransaction(index) {
-  transactions.splice(index, 1);
-  saveTransactions();
-  updateDashboard();
-}
-
 function updateDashboard() {
-  const income = transactions
+  const allTransactions = accounts.flatMap(a =>
+    a.transactions.map(t => ({ ...t, accountName: a.name }))
+  );
+  const income = allTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
-  const expenses = transactions
+  const expenses = allTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
   const balance = income - expenses;
@@ -44,23 +16,7 @@ function updateDashboard() {
   document.querySelector('.income p').textContent = `$${income.toFixed(2)}`;
   document.querySelector('.expenses p').textContent = `$${expenses.toFixed(2)}`;
   document.querySelector('.balance p').textContent = `$${balance.toFixed(2)}`;
-
-  const list = document.getElementById('transactions');
-  list.innerHTML = transactions.map((t, index) => `
-    <li class="${t.type}">
-      <span>${t.description}</span>
-      <span class="date">${t.date}</span>
-      <span>${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
-      <button class="delete-btn" onclick="deleteTransaction(${index})">✕</button>
-    </li>
-  `).join('');
-
-  updateChart(); // <-- right here, inside updateDashboard, at the bottom
-}
-
-function clearForm() {
-  document.getElementById('description').value = '';
-  document.getElementById('amount').value = '';
+  updateChart(allTransactions);
 }
 
 function toggleFinn() {
@@ -69,27 +25,22 @@ function toggleFinn() {
 }
 
 function showPage(pageName) {
-  // Hide all pages
   document.querySelectorAll('.page').forEach(page => {
     page.classList.remove('active');
   });
-
-  // Remove active from all nav items
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.remove('active');
   });
-
-  // Show selected page
   document.getElementById(`page-${pageName}`).classList.add('active');
-
-  // Highlight active nav item
   event.currentTarget.classList.add('active');
+
+  if (pageName === 'transactions') renderAllTransactions();
+  if (pageName === 'dashboard') updateDashboard();
+  if (pageName === 'accounts') renderAccounts();
 }
 
-
-function updateChart() {
-  const expenses = transactions.filter(t => t.type === 'expense');
-
+function updateChart(allTransactions) {
+  const expenses = allTransactions.filter(t => t.type === 'expense');
   const categoryTotals = {};
   expenses.forEach(t => {
     const cat = t.category || 'Other';
@@ -103,10 +54,7 @@ function updateChart() {
     '#c084fc', '#fb923c', '#34d399', '#f472b6'
   ];
 
-  if (spendingChart) {
-    spendingChart.destroy();
-  }
-
+  if (spendingChart) spendingChart.destroy();
   if (labels.length === 0) return;
 
   const ctx = document.getElementById('spendingChart').getContext('2d');
@@ -122,9 +70,7 @@ function updateChart() {
     },
     options: {
       plugins: {
-        legend: {
-          labels: { color: '#ffffff' }
-        }
+        legend: { labels: { color: '#ffffff' } }
       }
     }
   });
@@ -149,6 +95,7 @@ function addAccount() {
     name,
     type,
     balance,
+    limit: type === 'Credit Card' ? balance : null,
     transactions: []
   };
 
@@ -168,16 +115,16 @@ function deleteAccount(id) {
     accounts = accounts.filter(a => a.id !== id);
     saveAccounts();
     renderAccounts();
+    updateDashboard();
   }
 }
 
 function renderAccounts() {
   const grid = document.getElementById('accountsGrid');
+  if (!grid) return;
+
   if (accounts.length === 0) {
-    grid.innerHTML = `
-      <div class="no-accounts">
-        <p>No accounts yet. Add your first account above!</p>
-      </div>`;
+    grid.innerHTML = `<div class="no-accounts"><p>No accounts yet. Add your first account above!</p></div>`;
     return;
   }
 
@@ -189,9 +136,19 @@ function renderAccounts() {
       </div>
       <div class="account-name">${account.name}</div>
       <div class="account-type">${account.type}</div>
-      <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
-        $${Math.abs(account.balance).toFixed(2)}
-      </div>
+      ${account.type === 'Credit Card' ? `
+        <div class="credit-spent">$${Math.abs(account.balance).toFixed(2)} spent</div>
+        ${account.limit ? `
+          <div class="credit-bar">
+            <div class="credit-bar-fill" style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
+          </div>
+          <div class="credit-limit">of $${account.limit.toFixed(2)} limit</div>
+        ` : ''}
+      ` : `
+        <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
+          $${Math.abs(account.balance).toFixed(2)}
+        </div>
+      `}
     </div>
   `).join('');
 }
@@ -213,7 +170,7 @@ function openAccount(id) {
 
   document.getElementById('accountDetailName').textContent = account.name;
   document.getElementById('accountDetailType').textContent = account.type;
-  document.getElementById('accountDetailBalance').textContent = 
+  document.getElementById('accountDetailBalance').textContent =
     `$${account.balance.toFixed(2)}`;
 
   renderAccountTransactions(account);
@@ -225,6 +182,7 @@ function openAccount(id) {
 function closeAccount() {
   document.getElementById('accountsView').style.display = 'block';
   document.getElementById('accountDetailView').style.display = 'none';
+  updateDashboard();
 }
 
 function addAccountTransaction() {
@@ -257,10 +215,10 @@ function addAccountTransaction() {
   renderAccountTransactions(account);
   document.getElementById('accountDetailBalance').textContent =
     `$${account.balance.toFixed(2)}`;
-
   document.getElementById('accTxDescription').value = '';
   document.getElementById('accTxAmount').value = '';
   renderAccounts();
+  updateDashboard();
 }
 
 function deleteAccountTransaction(accountId, txId) {
@@ -282,6 +240,7 @@ function deleteAccountTransaction(accountId, txId) {
   document.getElementById('accountDetailBalance').textContent =
     `$${account.balance.toFixed(2)}`;
   renderAccounts();
+  updateDashboard();
 }
 
 function renderAccountTransactions(account) {
@@ -297,12 +256,116 @@ function renderAccountTransactions(account) {
       <span class="date">${tx.date}</span>
       <span class="category-tag">${tx.category}</span>
       <span>${tx.type === 'income' ? '+' : '-'}$${tx.amount.toFixed(2)}</span>
-      <button class="delete-btn" 
+      <button class="delete-btn"
         onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
     </li>
   `).join('');
 }
 
+function renderAllTransactions() {
+  const list = document.getElementById('allTransactionsList');
+  if (!list) return;
+
+  const allTransactions = accounts.flatMap(a =>
+    a.transactions.map(t => ({ ...t, accountName: a.name, accountId: a.id }))
+  );
+
+  allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (allTransactions.length === 0) {
+    list.innerHTML = '<p class="no-tx">No transactions yet. Add accounts and start tracking!</p>';
+    return;
+  }
+
+  list.innerHTML = allTransactions.map(t => `
+    <li class="${t.type}">
+      <span>${t.description} ${t.recurring ? '🔄' : ''}</span>
+      <span class="account-source">${t.accountName}</span>
+      <span class="date">${t.date}</span>
+      <span class="category-tag">${t.category}</span>
+      <span>${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
+    </li>
+  `).join('');
+}
+
+async function sendToFinn() {
+  const input = document.getElementById('finnInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  addFinnMessage(message, 'user');
+  input.value = '';
+  addFinnMessage('FINN is thinking...', 'finn finn-thinking');
+
+  const allTransactions = accounts.flatMap(a =>
+    a.transactions.map(t => ({ ...t, accountName: a.name }))
+  );
+
+  const totalIncome = allTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = allTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const context = `
+    User's Financial Summary:
+    - Total Income: $${totalIncome.toFixed(2)}
+    - Total Expenses: $${totalExpenses.toFixed(2)}
+    - Current Balance: $${(totalIncome - totalExpenses).toFixed(2)}
+    - Accounts: ${accounts.map(a => `${a.name} (${a.type}): $${a.balance.toFixed(2)}`).join(', ')}
+    - Recent Transactions: ${JSON.stringify(allTransactions.slice(-10))}
+  `;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': '${process.env.ANTHROPIC_API_KEY}',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are FINN, a Financial Intelligence Neural Network.
+        You are a logical, trustworthy, and personable personal financial advisor.
+        You are direct, smart, and always base your advice on the user's real numbers.
+        When a user wants to make a purchase, question it logically.
+        You can answer questions about budgeting, saving, investing, taxes, and general finance.
+        If you need more information to give accurate advice, ask the user for it.
+        Always be honest even if the answer isn't what they want to hear.
+        Here is the user's current financial data: ${context}`,
+        messages: [{ role: 'user', content: message }]
+      })
+    });
+
+    const data = await response.json();
+    const messages = document.getElementById('finnMessages');
+    const thinking = messages.querySelector('.finn-thinking');
+    if (thinking) thinking.parentElement.remove();
+
+    const reply = data.content[0].text;
+    addFinnMessage(reply, 'finn');
+
+  } catch (error) {
+    const messages = document.getElementById('finnMessages');
+    const thinking = messages.querySelector('.finn-thinking');
+    if (thinking) thinking.parentElement.remove();
+    addFinnMessage('Sorry, I ran into an issue. Please try again!', 'finn');
+  }
+}
+
+function addFinnMessage(text, className) {
+  const messages = document.getElementById('finnMessages');
+  const div = document.createElement('div');
+  div.className = `finn-message ${className}`;
+  div.innerHTML = `<p>${text}</p>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
 
 // Load everything when page opens
 updateDashboard();
