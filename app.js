@@ -1,21 +1,52 @@
 let spendingChart = null;
 let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
 
+function formatCurrency(amount) {
+  return '$' + Math.abs(amount).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 function updateDashboard() {
   const allTransactions = accounts.flatMap(a =>
-    a.transactions.map(t => ({ ...t, accountName: a.name }))
+    a.transactions.map(t => ({ ...t, accountName: a.name, accountType: a.type }))
   );
-  const income = allTransactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+
+  // Total expenses across all accounts
   const expenses = allTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
-  const balance = income - expenses;
 
-  document.querySelector('.income p').textContent = `$${income.toFixed(2)}`;
-  document.querySelector('.expenses p').textContent = `$${expenses.toFixed(2)}`;
-  document.querySelector('.balance p').textContent = `$${balance.toFixed(2)}`;
+  // Balance = sum of all non-credit card account balances
+  const balance = accounts
+    .filter(a => a.type !== 'Credit Card')
+    .reduce((sum, a) => sum + a.balance, 0);
+
+  // Update cards
+  document.querySelector('.income p').textContent = formatCurrency(balance);
+  document.querySelector('.expenses p').textContent = formatCurrency(expenses);
+  document.querySelector('.balance p').textContent = formatCurrency(balance - expenses);
+
+  // Recent transactions — last 5 across all accounts
+  const recent = [...allTransactions]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+
+  const list = document.getElementById('transactions');
+  if (recent.length === 0) {
+    list.innerHTML = '<p class="no-tx">No transactions yet. Add accounts to get started!</p>';
+  } else {
+    list.innerHTML = recent.map(t => `
+      <li class="${t.type}">
+        <span>${t.description}</span>
+        <span class="account-source">${t.accountName}</span>
+        <span class="date">${t.date}</span>
+        <span>${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</span>
+      </li>
+    `).join('');
+  }
+
   updateChart(allTransactions);
 }
 
@@ -83,7 +114,7 @@ function saveAccounts() {
 function addAccount() {
   const name = document.getElementById('accountName').value.trim();
   const type = document.getElementById('accountType').value;
-  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
+  const inputValue = parseFloat(document.getElementById('accountBalance').value) || 0;
 
   if (!name) {
     alert('Please enter an account name!');
@@ -94,8 +125,10 @@ function addAccount() {
     id: Date.now(),
     name,
     type,
-    balance,
-    limit: type === 'Credit Card' ? balance : null,
+    // Credit cards start at 0 spent, others start at their input value
+    balance: type === 'Credit Card' ? 0 : inputValue,
+    // Only credit cards have a limit
+    limit: type === 'Credit Card' ? inputValue : null,
     transactions: []
   };
 
@@ -104,6 +137,7 @@ function addAccount() {
   renderAccounts();
   clearAccountForm();
 }
+
 
 function clearAccountForm() {
   document.getElementById('accountName').value = '';

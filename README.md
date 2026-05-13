@@ -8,7 +8,7 @@ Built with HTML, CSS, and JavaScript.
 
 ## Features
 
-- Real time dashboard — income, expenses, and balance cards
+- Real time dashboard — expenses, and balance cards
 - Add transactions with categories and date stamps
 - Delete individual transactions
 - Spending breakdown donut chart by category
