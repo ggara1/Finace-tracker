@@ -9,10 +9,32 @@ function formatCurrency(amount) {
   });
 }
 
-function toggleBalance()  {
+function toggleBalance() {
   balanceVisible = !balanceVisible;
-  updateDashboard;
+  
+  const balanceEl = document.getElementById('balanceAmount');
+  const netEl = document.getElementById('netAmount');
+  
+  if (balanceVisible) {
+    // Calculate and show real values
+    const balance = accounts
+      .filter(a => a.type !== 'Credit Card')
+      .reduce((sum, a) => sum + a.balance, 0);
+    
+    const expenses = accounts
+      .flatMap(a => a.transactions)
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    balanceEl.textContent = formatCurrency(balance);
+    netEl.textContent = formatCurrency(balance - expenses);
+  } else {
+    balanceEl.textContent = '****';
+    netEl.textContent = '****';
+  }
 }
+
+
 
 function updateDashboard() {
   const allTransactions = accounts.flatMap(a =>
