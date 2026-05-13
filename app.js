@@ -166,26 +166,28 @@ function renderAccounts() {
     <div class="account-card" onclick="openAccount(${account.id})">
       <div class="account-card-header">
         <span class="account-icon">${getAccountIcon(account.type)}</span>
-        <button class="delete-btn" onclick="event.stopPropagation(); deleteAccount(${account.id})">✕</button>
+        <button class="delete-btn" onclick="event.stopPropagation(); 
+          deleteAccount(${account.id})">✕</button>
       </div>
       <div class="account-name">${account.name}</div>
       <div class="account-type">${account.type}</div>
       ${account.type === 'Credit Card' ? `
-        <div class="credit-spent">$${Math.abs(account.balance).toFixed(2)} spent</div>
+        <div class="credit-spent">${formatCurrency(Math.abs(account.balance))} spent</div>
         ${account.limit ? `
           <div class="credit-bar">
             <div class="credit-bar-fill" style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
           </div>
-          <div class="credit-limit">of $${account.limit.toFixed(2)} limit</div>
+          <div class="credit-limit">of ${formatCurrency(account.limit)} limit</div>
         ` : ''}
       ` : `
         <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
-          $${Math.abs(account.balance).toFixed(2)}
+          ${formatCurrency(account.balance)}
         </div>
       `}
     </div>
   `).join('');
 }
+
 
 function getAccountIcon(type) {
   const icons = {
@@ -205,7 +207,7 @@ function openAccount(id) {
   document.getElementById('accountDetailName').textContent = account.name;
   document.getElementById('accountDetailType').textContent = account.type;
   document.getElementById('accountDetailBalance').textContent =
-    `$${account.balance.toFixed(2)}`;
+    formatCurrency(account.balance);
 
   renderAccountTransactions(account);
   document.getElementById('accountsView').style.display = 'none';
@@ -248,7 +250,7 @@ function addAccountTransaction() {
   saveAccounts();
   renderAccountTransactions(account);
   document.getElementById('accountDetailBalance').textContent =
-    `$${account.balance.toFixed(2)}`;
+    formatCurrency(account.balance);
   document.getElementById('accTxDescription').value = '';
   document.getElementById('accTxAmount').value = '';
   renderAccounts();
@@ -272,7 +274,7 @@ function deleteAccountTransaction(accountId, txId) {
   saveAccounts();
   renderAccountTransactions(account);
   document.getElementById('accountDetailBalance').textContent =
-    `$${account.balance.toFixed(2)}`;
+    formatCurrency(account.balance);
   renderAccounts();
   updateDashboard();
 }
@@ -285,15 +287,15 @@ function renderAccountTransactions(account) {
   }
 
   list.innerHTML = account.transactions.map(tx => `
-    <li class="${tx.type}">
-      <span>${tx.description} ${tx.recurring ? '🔄' : ''}</span>
-      <span class="date">${tx.date}</span>
-      <span class="category-tag">${tx.category}</span>
-      <span>${tx.type === 'income' ? '+' : '-'}$${tx.amount.toFixed(2)}</span>
-      <button class="delete-btn"
-        onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
-    </li>
-  `).join('');
+  <li class="${tx.type}">
+    <span>${tx.description} ${tx.recurring ? '🔄' : ''}</span>
+    <span class="date">${tx.date}</span>
+    <span class="category-tag">${tx.category}</span>
+    <span>${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}</span>
+    <button class="delete-btn"
+      onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
+  </li>
+`).join('');
 }
 
 function renderAllTransactions() {
@@ -312,14 +314,14 @@ function renderAllTransactions() {
   }
 
   list.innerHTML = allTransactions.map(t => `
-    <li class="${t.type}">
-      <span>${t.description} ${t.recurring ? '🔄' : ''}</span>
-      <span class="account-source">${t.accountName}</span>
-      <span class="date">${t.date}</span>
-      <span class="category-tag">${t.category}</span>
-      <span>${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}</span>
-    </li>
-  `).join('');
+  <li class="${t.type}">
+    <span>${t.description} ${t.recurring ? '🔄' : ''}</span>
+    <span class="account-source">${t.accountName}</span>
+    <span class="date">${t.date}</span>
+    <span class="category-tag">${t.category}</span>
+    <span>${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</span>
+  </li>
+`).join('');
 }
 
 async function sendToFinn() {
