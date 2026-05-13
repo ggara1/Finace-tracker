@@ -599,4 +599,16 @@ button:hover {
   color: #aaaaaa;
 }
 
+.toggle-visibility {
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-left: 6px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.toggle-visibility:hover {
+  opacity: 1;
+}
+
 

@@ -1,11 +1,17 @@
 let spendingChart = null;
 let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
+let balanceVisible = false;
 
 function formatCurrency(amount) {
   return '$' + Math.abs(amount).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+function toggleBalance()  {
+  balanceVisible = !balanceVisible;
+  updateDashboard;
 }
 
 function updateDashboard() {
@@ -23,10 +29,14 @@ function updateDashboard() {
     .filter(a => a.type !== 'Credit Card')
     .reduce((sum, a) => sum + a.balance, 0);
 
-  // Update cards
-  document.querySelector('.income p').textContent = formatCurrency(balance);
-  document.querySelector('.expenses p').textContent = formatCurrency(expenses);
-  document.querySelector('.balance p').textContent = formatCurrency(balance - expenses);
+// Update cards — hide balance and net by default
+  document.getElementById('balanceAmount').textContent = 
+    balanceVisible ? formatCurrency(balance) : '****';
+  document.getElementById('expensesAmount').textContent = 
+    formatCurrency(expenses);
+  document.getElementById('netAmount').textContent = 
+    balanceVisible ? formatCurrency(balance - expenses) : '****';
+
 
   // Recent transactions — last 5 across all accounts
   const recent = [...allTransactions]
