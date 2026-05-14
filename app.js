@@ -11,21 +11,16 @@ function formatCurrency(amount) {
 
 function toggleBalance() {
   balanceVisible = !balanceVisible;
-  
   const balanceEl = document.getElementById('balanceAmount');
   const netEl = document.getElementById('netAmount');
-  
   if (balanceVisible) {
-    // Calculate and show real values
     const balance = accounts
       .filter(a => a.type !== 'Credit Card')
       .reduce((sum, a) => sum + a.balance, 0);
-    
     const expenses = accounts
       .flatMap(a => a.transactions)
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-
     balanceEl.textContent = formatCurrency(balance);
     netEl.textContent = formatCurrency(balance - expenses);
   } else {
@@ -34,32 +29,24 @@ function toggleBalance() {
   }
 }
 
-
 function updateDashboard() {
   const allTransactions = accounts.flatMap(a =>
     a.transactions.map(t => ({ ...t, accountName: a.name, accountType: a.type }))
   );
-
-  // Total expenses across all accounts
   const expenses = allTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
-
-  // Balance = sum of all non-credit card account balances
   const balance = accounts
     .filter(a => a.type !== 'Credit Card')
     .reduce((sum, a) => sum + a.balance, 0);
 
-// Update cards — hide balance and net by default
-  document.getElementById('balanceAmount').textContent = 
+  document.getElementById('balanceAmount').textContent =
     balanceVisible ? formatCurrency(balance) : '****';
-  document.getElementById('expensesAmount').textContent = 
+  document.getElementById('expensesAmount').textContent =
     formatCurrency(expenses);
-  document.getElementById('netAmount').textContent = 
+  document.getElementById('netAmount').textContent =
     balanceVisible ? formatCurrency(balance - expenses) : '****';
 
-
-  // Recent transactions — last 5 across all accounts
   const recent = [...allTransactions]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 5);
@@ -77,13 +64,18 @@ function updateDashboard() {
       </li>
     `).join('');
   }
-
   updateChart(allTransactions);
 }
 
 function toggleFinn() {
   const popup = document.getElementById('finnPopup');
   popup.classList.toggle('open');
+}
+
+function toggleDueDateField() {
+  const type = document.getElementById('accountType').value;
+  const dueDateField = document.getElementById('accountDueDate');
+  dueDateField.style.display = type === 'Credit Card' ? 'block' : 'none';
 }
 
 function showPage(pageName) {
@@ -108,17 +100,14 @@ function updateChart(allTransactions) {
     const cat = t.category || 'Other';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
   });
-
   const labels = Object.keys(categoryTotals);
   const data = Object.values(categoryTotals);
   const colors = [
     '#4ade80', '#f87171', '#60a5fa', '#facc15',
     '#c084fc', '#fb923c', '#34d399', '#f472b6'
   ];
-
   if (spendingChart) spendingChart.destroy();
   if (labels.length === 0) return;
-
   const ctx = document.getElementById('spendingChart').getContext('2d');
   spendingChart = new Chart(ctx, {
     type: 'doughnut',
@@ -146,6 +135,8 @@ function addAccount() {
   const name = document.getElementById('accountName').value.trim();
   const type = document.getElementById('accountType').value;
   const inputValue = parseFloat(document.getElementById('accountBalance').value) || 0;
+  const dueDate = type === 'Credit Card' ?
+    parseInt(document.getElementById('accountDueDate').value) || null : null;
 
   if (!name) {
     alert('Please enter an account name!');
@@ -156,10 +147,9 @@ function addAccount() {
     id: Date.now(),
     name,
     type,
-    // Credit cards start at 0 spent, others start at their input value
     balance: type === 'Credit Card' ? 0 : inputValue,
-    // Only credit cards have a limit
     limit: type === 'Credit Card' ? inputValue : null,
+    dueDate,
     transactions: []
   };
 
@@ -169,10 +159,11 @@ function addAccount() {
   clearAccountForm();
 }
 
-
 function clearAccountForm() {
   document.getElementById('accountName').value = '';
   document.getElementById('accountBalance').value = '';
+  document.getElementById('accountDueDate').value = '';
+  document.getElementById('accountDueDate').style.display = 'none';
 }
 
 function deleteAccount(id) {
@@ -182,6 +173,32 @@ function deleteAccount(id) {
     renderAccounts();
     updateDashboard();
   }
+}
+
+function getCreditUtilizationClass(spent, limit) {
+  if (!limit) return 'low';
+  const utilization = (spent / limit) * 100;
+  if (utilization < 30) return 'low';
+  if (utilization < 70) return 'medium';
+  return 'high';
+}
+
+function getDueDateReminder(dueDate) {
+  if (!dueDate) return null;
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  let nextDue = new Date(currentYear, currentMonth, dueDate);
+  if (currentDay > dueDate) {
+    nextDue = new Date(currentYear, currentMonth + 1, dueDate);
+  }
+  const daysUntil = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+  if (daysUntil < 0) return { text: 'Overdue!', class: 'due-overdue' };
+  if (daysUntil === 0) return { text: 'Due today!', class: 'due-today' };
+  if (daysUntil === 1) return { text: 'Due tomorrow', class: 'due-soon' };
+  if (daysUntil <= 5) return { text: `Due in ${daysUntil} days`, class: 'due-soon' };
+  return { text: `Due ${nextDue.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, class: 'due-ok' };
 }
 
 function renderAccounts() {
@@ -197,7 +214,7 @@ function renderAccounts() {
     <div class="account-card" onclick="openAccount(${account.id})">
       <div class="account-card-header">
         <span class="account-icon">${getAccountIcon(account.type)}</span>
-        <button class="delete-btn" onclick="event.stopPropagation(); 
+        <button class="delete-btn" onclick="event.stopPropagation();
           deleteAccount(${account.id})">✕</button>
       </div>
       <div class="account-name">${account.name}</div>
@@ -206,9 +223,15 @@ function renderAccounts() {
         <div class="credit-spent">${formatCurrency(Math.abs(account.balance))} spent</div>
         ${account.limit ? `
           <div class="credit-bar">
-            <div class="credit-bar-fill ${getCreditUtilizationClass(Math.abs(account.balance), account.limit)}" style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
+            <div class="credit-bar-fill ${getCreditUtilizationClass(Math.abs(account.balance), account.limit)}"
+              style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
           </div>
           <div class="credit-limit">of ${formatCurrency(account.limit)} limit</div>
+        ` : ''}
+        ${account.dueDate ? `
+          <div class="due-date-reminder ${getDueDateReminder(account.dueDate)?.class}">
+            📅 ${getDueDateReminder(account.dueDate)?.text}
+          </div>
         ` : ''}
       ` : `
         <div class="account-balance ${account.balance >= 0 ? 'positive' : 'negative'}">
@@ -217,14 +240,6 @@ function renderAccounts() {
       `}
     </div>
   `).join('');
-}
-
-function getCreditUtilizationClass(spent, limit) {
-  if (!limit) return 'low';
-  const utilization = (spent / limit) * 100;
-  if (utilization < 30) return 'low';
-  if (utilization < 70) return 'medium';
-  return 'high';
 }
 
 function getAccountIcon(type) {
@@ -325,15 +340,15 @@ function renderAccountTransactions(account) {
   }
 
   list.innerHTML = account.transactions.map(tx => `
-  <li class="${tx.type}">
-    <span>${tx.description} ${tx.recurring ? '🔄' : ''}</span>
-    <span class="date">${tx.date}</span>
-    <span class="category-tag">${tx.category}</span>
-    <span>${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}</span>
-    <button class="delete-btn"
-      onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
-  </li>
-`).join('');
+    <li class="${tx.type}">
+      <span>${tx.description} ${tx.recurring ? '🔄' : ''}</span>
+      <span class="date">${tx.date}</span>
+      <span class="category-tag">${tx.category}</span>
+      <span>${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}</span>
+      <button class="delete-btn"
+        onclick="deleteAccountTransaction(${account.id}, ${tx.id})">✕</button>
+    </li>
+  `).join('');
 }
 
 function renderAllTransactions() {
@@ -352,14 +367,14 @@ function renderAllTransactions() {
   }
 
   list.innerHTML = allTransactions.map(t => `
-  <li class="${t.type}">
-    <span>${t.description} ${t.recurring ? '🔄' : ''}</span>
-    <span class="account-source">${t.accountName}</span>
-    <span class="date">${t.date}</span>
-    <span class="category-tag">${t.category}</span>
-    <span>${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</span>
-  </li>
-`).join('');
+    <li class="${t.type}">
+      <span>${t.description} ${t.recurring ? '🔄' : ''}</span>
+      <span class="account-source">${t.accountName}</span>
+      <span class="date">${t.date}</span>
+      <span class="category-tag">${t.category}</span>
+      <span>${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</span>
+    </li>
+  `).join('');
 }
 
 async function sendToFinn() {
@@ -441,6 +456,25 @@ function addFinnMessage(text, className) {
   messages.scrollTop = messages.scrollHeight;
 }
 
+function showPage(pageName) {
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  document.getElementById(`page-${pageName}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (pageName === 'transactions') renderAllTransactions();
+  if (pageName === 'dashboard') updateDashboard();
+  if (pageName === 'accounts') {
+    renderAccounts();
+    // Attach due date toggle after accounts page is visible
+    const typeSelect = document.getElementById('accountType');
+    if (typeSelect) typeSelect.addEventListener('change', toggleDueDateField);
+  }
+}
+
 // Load everything when page opens
 updateDashboard();
-

@@ -85,17 +85,18 @@
       <div class="form-section">
         <p class="section-title">Add Account</p>
         <div class="form">
-          <input type="text" id="accountName" placeholder="Account name (e.g. Chase Sapphire)" />
-          <select id="accountType">
-            <option value="Credit Card">💳 Credit Card</option>
-            <option value="Debit">🏦 Debit</option>
-            <option value="Savings">🏧 Savings</option>
-            <option value="Investment">📈 Investment</option>
-            <option value="Cash">💵 Cash</option>
-          </select>
-          <input type="number" id="accountBalance" placeholder="Credit limit or starting balance" />
-          <button onclick="addAccount()">Add Account</button>
-        </div>
+  <input type="text" id="accountName" placeholder="Account name (e.g. Chase Sapphire)" />
+  <select id="accountType" onchange="toggleDueDateField()">
+    <option value="Credit Card">💳 Credit Card</option>
+    <option value="Debit">🏦 Debit</option>
+    <option value="Savings">🏧 Savings</option>
+    <option value="Investment">📈 Investment</option>
+    <option value="Cash">💵 Cash</option>
+  </select>
+  <input type="number" id="accountBalance" placeholder="Credit limit or starting balance" />
+  <input type="number" id="accountDueDate" placeholder="Payment due date (1-31)" min="1" max="31" style="display:none;" />
+  <button onclick="addAccount()">Add Account</button>
+</div>
       </div>
       <div id="accountsGrid" class="accounts-grid"></div>
     </div>

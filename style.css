@@ -622,5 +622,32 @@ button:hover {
   opacity: 1;
 }
 
+.due-date-reminder {
+  font-size: 0.78rem;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.due-ok {
+  color: #4ade80;
+  background-color: #0f2a1f;
+}
+
+.due-soon {
+  color: #facc15;
+  background-color: #2a2200;
+}
+
+.due-today {
+  color: #fb923c;
+  background-color: #2a1500;
+}
+
+.due-overdue {
+  color: #f87171;
+  background-color: #2a0f0f;
+}
 
 
