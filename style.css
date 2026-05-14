@@ -589,9 +589,20 @@ button:hover {
 
 .credit-bar-fill {
   height: 100%;
-  background-color: #f87171;
   border-radius: 3px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.credit-bar-fill.low {
+  background-color: #4ade80;
+}
+
+.credit-bar-fill.medium {
+  background-color: #facc15;
+}
+
+.credit-bar-fill.high {
+  background-color: #f87171;
 }
 
 .credit-limit {
@@ -610,5 +621,6 @@ button:hover {
 .toggle-visibility:hover {
   opacity: 1;
 }
+
 
 

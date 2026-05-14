@@ -35,7 +35,6 @@ function toggleBalance() {
 }
 
 
-
 function updateDashboard() {
   const allTransactions = accounts.flatMap(a =>
     a.transactions.map(t => ({ ...t, accountName: a.name, accountType: a.type }))
@@ -207,7 +206,7 @@ function renderAccounts() {
         <div class="credit-spent">${formatCurrency(Math.abs(account.balance))} spent</div>
         ${account.limit ? `
           <div class="credit-bar">
-            <div class="credit-bar-fill" style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
+            <div class="credit-bar-fill ${getCreditUtilizationClass(Math.abs(account.balance), account.limit)}" style="width: ${Math.min((Math.abs(account.balance) / account.limit) * 100, 100)}%"></div>
           </div>
           <div class="credit-limit">of ${formatCurrency(account.limit)} limit</div>
         ` : ''}
@@ -220,6 +219,13 @@ function renderAccounts() {
   `).join('');
 }
 
+function getCreditUtilizationClass(spent, limit) {
+  if (!limit) return 'low';
+  const utilization = (spent / limit) * 100;
+  if (utilization < 30) return 'low';
+  if (utilization < 70) return 'medium';
+  return 'high';
+}
 
 function getAccountIcon(type) {
   const icons = {
